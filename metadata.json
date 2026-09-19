@@ -1,0 +1,6 @@
+{
+  "name": "Perpustakaan Lasem Sidayu",
+  "description": "Sistem Informasi & Perpustakaan Digital Desa Lasem Sidayu, ramah perangkat bergerak (mobile-friendly) dengan akses luring serta dashboard perangkat desa & pengelola.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
