@@ -38,8 +38,6 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
   isBorrowed,
   onAddReview,
 }) => {
-  if (!book) return null;
-
   const [activeTab, setActiveTab] = useState<'sinopsis' | 'ulasan'>('sinopsis');
   const [newComment, setNewComment] = useState('');
   const [newRating, setNewRating] = useState(5);
@@ -47,6 +45,9 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [newReviewerRole, setNewReviewerRole] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Early return SETELAH semua hooks (aturan React Hooks)
+  if (!book) return null;
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();

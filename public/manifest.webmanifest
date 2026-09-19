@@ -1,0 +1,26 @@
+{
+  "name": "Perpustakaan Lasem Sidayu",
+  "short_name": "Perpus Lasem",
+  "description": "Perpustakaan digital Desa Lasem Sidayu - baca buku, pinjam, dan komunitas warga.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAF8",
+  "theme_color": "#065f46",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

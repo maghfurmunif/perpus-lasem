@@ -43,6 +43,13 @@ export const CollectionTab: React.FC<CollectionTabProps> = ({
   downloadedBookIds,
   borrowedBookIds,
 }) => {
+  const coverFallback: Record<string, string> = {
+    'Pertanian': 'https://images.unsplash.com/photo-1492496913980-501348b61469?w=900&auto=format&fit=crop&q=85',
+    'UMKM': 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=900&auto=format&fit=crop&q=85',
+    'Edukasi': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=900&auto=format&fit=crop&q=85',
+    'Budaya Desa': 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=900&auto=format&fit=crop&q=85',
+    'Fiksi & Populer': 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=900&auto=format&fit=crop&q=85',
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [formatFilter, setFormatFilter] = useState<'Semua' | BookFormat>('Semua');
   const [accessFilter, setAccessFilter] = useState<'Semua' | AccessType>('Semua');
@@ -89,7 +96,16 @@ export const CollectionTab: React.FC<CollectionTabProps> = ({
   }, [books, selectedCategory, formatFilter, accessFilter, onlyAvailable, searchQuery, sortBy]);
 
   return (
-    <div className="pb-24 pt-4 sm:pt-6 space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="collection-shell pb-24 pt-4 sm:pt-6 space-y-6 max-w-[1500px] mx-auto px-4 sm:px-6 lg:pr-8 relative">
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-56 bg-white border-r border-stone-200 flex-col p-6 z-30">
+        <div className="flex items-center gap-3 text-sm font-bold text-stone-800 mb-10"><img src="/logo-lasem-mark.png" alt="Perpustakaan Desa Lasem" className="w-12 h-12 rounded-full object-cover"/><span>Perpustakaan Desa<br/><span className="text-amber-700">Lasem</span></span></div>
+        <nav className="space-y-2 text-sm">
+          <button className="w-full flex items-center gap-3 rounded-xl bg-emerald-50 text-emerald-800 px-3 py-3 font-semibold"><BookOpen className="w-4 h-4"/>Koleksi Buku</button>
+          <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-stone-500 hover:bg-stone-50" onClick={() => onCategoryChange('Semua')}><Search className="w-4 h-4"/>Cari Koleksi</button>
+          <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-stone-500 hover:bg-stone-50"><Bookmark className="w-4 h-4"/>Peminjaman</button>
+        </nav>
+        <div className="mt-auto pt-6 border-t border-stone-100"><p className="text-[10px] uppercase tracking-widest text-stone-400 mb-2">Tampilan</p><div className="text-xs text-emerald-800 bg-emerald-50 rounded-lg px-3 py-2">Desktop / Koleksi</div><div className="text-xs text-stone-500 rounded-lg px-3 py-2 mt-1">HP & Tablet tersedia</div></div>
+      </aside>
       
       {/* Header Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-stone-200 pb-4">
@@ -260,6 +276,10 @@ export const CollectionTab: React.FC<CollectionTabProps> = ({
                     alt={book.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     referrerPolicy="no-referrer"
+                    onError={(event) => {
+                      const fallback = coverFallback[book.category] ?? coverFallback.Edukasi;
+                      if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback;
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 

@@ -112,5 +112,34 @@ export interface AdminUser {
   dusun: string;
 }
 
-export type DeviceViewMode = 'responsive' | 'smartphone' | 'tablet' | 'showcase';
+/* ============================================================
+   PHASE 1: AUTH & ROLE
+   ============================================================ */
+export type UserRole = 'superadmin' | 'admin' | 'pustakawan' | 'anggota' | 'kepala_desa';
 
+export const ADMIN_ROLES: UserRole[] = ['superadmin', 'admin', 'pustakawan', 'kepala_desa'];
+
+export interface Profile {
+  id: string;
+  nama_lengkap: string | null;
+  email: string | null;
+  nomor_wa: string | null;
+  alamat: string | null;
+  role: UserRole;
+  aktif: boolean;
+  created_at?: string;
+}
+
+/* ============================================================
+   PHASE 5: KOMUNITAS (FORUM WARGA)
+   ============================================================ */
+export interface ForumPost {
+  id: string;
+  user_id: string;
+  author_name: string;
+  category: string;
+  title: string;
+  content: string;
+  likes: number;
+  created_at: string;
+}

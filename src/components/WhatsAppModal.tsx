@@ -26,8 +26,6 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   userName,
   initialMessage,
 }) => {
-  if (!isOpen) return null;
-
   const defaultTemplates = [
     `Halo Pustakawan Desa ${villageName}, saya ${userName}. Saya ingin bertanya tentang ketersediaan buku fisik di ruang baca desa.`,
     `Halo Pustakawan, saya ${userName}. Saya ingin memohon perpanjangan pinjaman buku saya selama 7 hari lagi.`,
@@ -37,6 +35,9 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
   const [message, setMessage] = useState(initialMessage || defaultTemplates[0]);
   const [copied, setCopied] = useState(false);
+
+  // Early return SETELAH semua hooks (aturan React Hooks)
+  if (!isOpen) return null;
 
   const librarianPhone = '6281234567890';
   const waUrl = `https://wa.me/${librarianPhone}?text=${encodeURIComponent(message)}`;

@@ -28,11 +28,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   currentAddress,
   onSaveProfile,
 }) => {
-  if (!isOpen) return null;
-
   const [name, setName] = useState(currentName || '');
   const [phone, setPhone] = useState(currentPhone || '');
   const [address, setAddress] = useState(currentAddress || 'Dusun Krajan, RT 02 / RW 01');
+
+  // Early return SETELAH semua hooks (aturan React Hooks)
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -19,8 +19,6 @@ export const BookRequestModal: React.FC<BookRequestModalProps> = ({
   userPhone = '',
   onSubmitRequest,
 }) => {
-  if (!isOpen) return null;
-
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [category, setCategory] = useState<BookCategory>('Pertanian');
@@ -28,6 +26,9 @@ export const BookRequestModal: React.FC<BookRequestModalProps> = ({
   const [requesterName, setRequesterName] = useState(userName);
   const [requesterPhone, setRequesterPhone] = useState(userPhone);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Early return SETELAH semua hooks (aturan React Hooks)
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

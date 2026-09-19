@@ -49,8 +49,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       badge: downloadCount > 0 ? downloadCount : null,
     },
     {
+      id: 'profile',
+      label: 'Profil',
+      icon: User,
+      badge: null,
+    },
+    {
       id: 'admin',
-      label: 'Perangkat Desa',
+      label: 'Portal Desa',
       icon: Building2,
       badge: pendingRequestsCount > 0 ? pendingRequestsCount : null,
     },

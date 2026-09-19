@@ -4,8 +4,7 @@ import {
   Trash2, 
   BookOpen, 
   HardDrive, 
-  WifiOff, 
-  Wifi, 
+  WifiOff,
   CheckCircle2, 
   ArrowRight,
   Sparkles,
@@ -19,8 +18,6 @@ interface DownloadsTabProps {
   onReadBook: (bookId: string) => void;
   onDeleteDownload: (bookId: string) => void;
   onBrowseBooks: () => void;
-  isSimulatedOffline: boolean;
-  onToggleSimulatedOffline: () => void;
 }
 
 export const DownloadsTab: React.FC<DownloadsTabProps> = ({
@@ -28,8 +25,6 @@ export const DownloadsTab: React.FC<DownloadsTabProps> = ({
   onReadBook,
   onDeleteDownload,
   onBrowseBooks,
-  isSimulatedOffline,
-  onToggleSimulatedOffline,
 }) => {
   const completedDownloads = downloads.filter((d) => d.isCompleted);
   const activeDownloads = downloads.filter((d) => !d.isCompleted);
@@ -54,19 +49,6 @@ export const DownloadsTab: React.FC<DownloadsTabProps> = ({
           </p>
         </div>
 
-        {/* Offline Simulator Switcher */}
-        <button
-          onClick={onToggleSimulatedOffline}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition self-start sm:self-auto ${
-            isSimulatedOffline
-              ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
-              : 'bg-white hover:bg-stone-50 text-stone-700 border-stone-300'
-          }`}
-          title="Uji coba membaca tanpa koneksi internet"
-        >
-          {isSimulatedOffline ? <WifiOff className="w-4 h-4" /> : <Wifi className="w-4 h-4 text-emerald-600" />}
-          <span>{isSimulatedOffline ? 'Mode Luring Aktif (Tanpa Sinyal)' : 'Uji Mode Tanpa Sinyal'}</span>
-        </button>
       </div>
 
       {/* Storage Indicator Banner */}

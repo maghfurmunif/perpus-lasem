@@ -34,6 +34,8 @@ interface ProfileTabProps {
   onWhatsAppClick: () => void;
   onEditProfileClick: () => void;
   onOpenAdminMode?: () => void;
+  profileRole?: string;
+  onLogout?: () => void;
 }
 
 export const ProfileTab: React.FC<ProfileTabProps> = ({
@@ -50,6 +52,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   onWhatsAppClick,
   onEditProfileClick,
   onOpenAdminMode,
+  profileRole,
+  onLogout,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -349,14 +353,29 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         )}
       </section>
 
-      {/* Edit Profile / Ganti Data */}
-      <div className="text-center pt-2">
-        <button
-          onClick={onEditProfileClick}
-          className="text-xs text-stone-500 hover:text-stone-800 underline font-medium"
-        >
-          Perbarui Data Warga / Ubah Nomor HP
-        </button>
+      {/* Role badge & keluar */}
+      <div className="text-center pt-2 space-y-3">
+        {profileRole && (
+          <span className="inline-block text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">
+            Role: {profileRole}
+          </span>
+        )}
+        <div>
+          <button
+            onClick={onEditProfileClick}
+            className="text-xs text-stone-500 hover:text-stone-800 underline font-medium mr-4"
+          >
+            Perbarui Data Warga / Ubah Nomor HP
+          </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="text-xs text-rose-600 hover:text-rose-800 underline font-medium"
+            >
+              Keluar dari Akun
+            </button>
+          )}
+        </div>
       </div>
 
     </div>

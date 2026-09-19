@@ -28,13 +28,14 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
   onDownload,
   isDownloaded,
 }) => {
-  if (!book) return null;
-
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [themeMode, setThemeMode] = useState<'light' | 'sepia' | 'dark'>('sepia');
   const [fontScale, setFontScale] = useState<number>(18); // px
   const [useSerif, setUseSerif] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Early return SETELAH semua hooks (aturan React Hooks)
+  if (!book) return null;
 
   const chapters = book.sampleChapters && book.sampleChapters.length > 0 
     ? book.sampleChapters 

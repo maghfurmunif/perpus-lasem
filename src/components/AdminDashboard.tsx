@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   BookOpen, 
@@ -31,6 +31,8 @@ import {
   UserCheck
 } from 'lucide-react';
 import { Book, BorrowRecord, BookCategory, Announcement, BookRequestItem, VillageOfficialRole } from '../types';
+import { uploadBookCover } from '../lib/cloudinary';
+import { fetchLibraryStats, type LibraryStats, bulkUpsertBooks, booksToCsv } from '../lib/db';
 
 interface AdminDashboardProps {
   books: Book[];
@@ -109,6 +111,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Action feedback message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Cover upload state (Phase 2: Cloudinary)
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [importingBooks, setImportingBooks] = useState(false);
+
+  // Phase 5: Statistik live dari view library_stats
+  const [stats, setStats] = useState<LibraryStats | null>(null);
+
+  const downloadBookExport = () => {
+    const blob = new Blob([booksToCsv(books)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = `katalog-buku-lasem-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+  };
+  const importBooksCsv = async (file: File) => {
+    setImportingBooks(true);
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    const parse = (line: string) => line.match(/("(?:[^"]|"")*"|[^,]*)(,|$)/g)?.map((v) => v.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '"')) ?? [];
+    const headers = parse(lines[0] ?? '');
+    const rows = lines.slice(1).map((line) => Object.fromEntries(headers.map((h, i) => [h, parse(line)[i] ?? ''])));
+    const result = await bulkUpsertBooks(rows);
+    setImportingBooks(false); setToastMessage(result.ok ? `${result.count} buku berhasil diimpor.` : `Impor gagal: ${result.error}`);
+    if (result.ok) window.location.reload();
+  };
+  useEffect(() => {
+    fetchLibraryStats().then(setStats);
+  }, [books.length, borrowRecords.length]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -491,7 +520,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
                 <div className="text-xl sm:text-2xl font-bold text-stone-900 font-serif">
-                  1.190 Warga
+                  {stats ? `${stats.total_members.toLocaleString('id-ID')} Warga` : '1.190 Warga'}
                 </div>
                 <p className="text-[11px] text-emerald-700 font-medium">
                   ↑ 14% dari 5 Dusun di Desa Lasem
@@ -506,10 +535,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
                 <div className="text-xl sm:text-2xl font-bold text-stone-900 font-serif">
-                  {activeBorrows} Buku
+                  {stats ? stats.active_borrows : activeBorrows} Buku
                 </div>
                 <p className="text-[11px] text-stone-500">
-                  Tingkat kembali tepat waktu: <strong className="text-emerald-700">97.8%</strong>
+                  Total sirkulasi: <strong className="text-emerald-700">{stats ? stats.total_borrows : '-'}</strong> peminjaman
                 </p>
               </div>
 
@@ -698,6 +727,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               {/* Add Book Button */}
+              <div className="flex flex-wrap gap-2">
+                <button onClick={downloadBookExport} className="px-3 py-2.5 bg-white border border-stone-200 hover:border-emerald-400 text-stone-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition" title="Ekspor katalog ke CSV">
+                  <FileText className="w-4 h-4" /> Ekspor CSV
+                </button>
+                <label className="px-3 py-2.5 bg-white border border-stone-200 hover:border-emerald-400 text-stone-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer" title="Impor katalog dari CSV">
+                  <ArrowLeft className="w-4 h-4 rotate-90" /> {importingBooks ? 'Mengimpor…' : 'Impor CSV'}
+                  <input type="file" accept=".csv,text/csv" className="hidden" disabled={importingBooks} onChange={(e) => e.target.files?.[0] && importBooksCsv(e.target.files[0])} />
+                </label>
+                <a href="/template-import-buku.csv" download className="px-3 py-2.5 text-emerald-800 hover:bg-emerald-50 rounded-xl text-xs font-bold transition">Unduh Template</a>
+              </div>
               <button
                 onClick={handleOpenAddBook}
                 className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition flex-shrink-0"
@@ -1428,13 +1467,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-stone-700">URL Gambar Sampul (Cover Image)</label>
-                <input
-                  type="text"
-                  value={bookFormData.coverImage}
-                  onChange={(e) => setBookFormData({ ...bookFormData, coverImage: e.target.value })}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:ring-1 focus:ring-emerald-600 outline-none"
-                />
+                <label className="font-bold text-stone-700">Sampul Buku (Upload atau URL)</label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://... (opsional)"
+                    value={bookFormData.coverImage}
+                    onChange={(e) => setBookFormData({ ...bookFormData, coverImage: e.target.value })}
+                    className="flex-1 px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:ring-1 focus:ring-emerald-600 outline-none"
+                  />
+                  <label className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl font-bold text-center cursor-pointer transition whitespace-nowrap">
+                    {coverUploading ? 'Mengunggah...' : '📷 Upload Cover'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={coverUploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setCoverUploading(true);
+                        try {
+                          const url = await uploadBookCover(file);
+                          setBookFormData((prev) => ({ ...prev, coverImage: url }));
+                          showToast('Cover berhasil diunggah ke Cloudinary.');
+                        } catch (err: any) {
+                          showToast(err?.message ?? 'Gagal upload cover.');
+                        } finally {
+                          setCoverUploading(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                {bookFormData.coverImage && (
+                  <img
+                    src={bookFormData.coverImage}
+                    alt="Preview cover"
+                    className="w-16 h-22 object-cover rounded-lg border border-stone-200 mt-1"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">
