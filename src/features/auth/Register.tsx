@@ -48,7 +48,7 @@ export default function Register() {
     } else {
       // Konfirmasi email nonaktif: langsung masuk aplikasi
       const slug = (form.nama_lengkap || form.email.split('@')[0]).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
-      navigate(`/app/${slug || 'anggota'}`, { replace: true });
+      navigate("/app", { replace: true });
     }
   }
 

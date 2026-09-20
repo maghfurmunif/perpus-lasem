@@ -1,0 +1,12 @@
+begin;
+alter table public.announcements add column if not exists content_type text not null default 'artikel';
+alter table public.announcements add column if not exists published boolean not null default false;
+alter table public.announcements add column if not exists published_at timestamptz;
+alter table public.forum_posts add column if not exists image_url text;
+alter table public.forum_posts add column if not exists published boolean not null default true;
+grant update on public.forum_posts to authenticated;
+drop policy if exists forum_update_admin on public.forum_posts;
+create policy forum_update_admin on public.forum_posts for update to authenticated using (public.is_admin()) with check (public.is_admin());
+update public.announcements set content_type='pengumuman' where content_type in ('berita','agenda') or content_type is null;
+notify pgrst, 'reload schema';
+commit;

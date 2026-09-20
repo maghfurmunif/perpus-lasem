@@ -20,6 +20,7 @@ interface ReaderModalProps {
   onClose: () => void;
   onDownload: (book: Book) => void;
   isDownloaded: boolean;
+  onProgress?: (chapter: number, progress: number) => void;
 }
 
 export const ReaderModal: React.FC<ReaderModalProps> = ({
@@ -27,6 +28,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
   onClose,
   onDownload,
   isDownloaded,
+  onProgress,
 }) => {
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [themeMode, setThemeMode] = useState<'light' | 'sepia' | 'dark'>('sepia');
@@ -37,15 +39,9 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
   // Early return SETELAH semua hooks (aturan React Hooks)
   if (!book) return null;
 
-  const chapters = book.sampleChapters && book.sampleChapters.length > 0 
-    ? book.sampleChapters 
-    : [
-        {
-          title: 'Pengantar & Bab Pembuka',
-          content: `${book.title}\n\n${book.description}\n\nBuku ini disusun untuk memberikan pengetahuan praktis dan aplikatif bagi seluruh lapisan warga desa. Bacalah setiap bagian dengan teliti dan terapkan langkah demi langkah demi kemajuan bersama.`
-        }
-      ];
-
+  if (book.fileUrl) return <div className="fixed inset-0 z-50 bg-white flex flex-col"><div className="p-4 flex gap-4"><button onClick={onClose}>Kembali</button><strong>{book.title}</strong><a href={book.fileUrl} target="_blank" rel="noreferrer">Buka file</a></div>{book.format === 'PDF' ? <iframe title={book.title} src={book.fileUrl} className="flex-1 w-full" /> : <p className="p-6">Buka file EPUB menggunakan aplikasi pembaca di perangkat Anda.</p>}</div>;
+  if (!book.sampleChapters?.length) return <div className="fixed inset-0 z-50 bg-white p-8"><button onClick={onClose}>Kembali</button><p>Konten digital buku ini belum tersedia.</p></div>;
+  const chapters = book.sampleChapters;
   const currentChapter = chapters[currentChapterIndex] || chapters[0];
 
   // Theme styling definitions
@@ -237,7 +233,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
       <footer className={`px-4 sm:px-6 py-3 border-t flex items-center justify-between z-10 transition-colors text-xs font-medium ${headerBgClasses[themeMode]}`}>
         <button
           disabled={currentChapterIndex === 0}
-          onClick={() => setCurrentChapterIndex((p) => Math.max(0, p - 1))}
+          onClick={() => { const next = Math.max(0, currentChapterIndex - 1); setCurrentChapterIndex(next); onProgress?.(next, Math.round((next / Math.max(1, chapters.length - 1)) * 100)); }}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-stone-400/30 disabled:opacity-30 hover:bg-stone-200/40 transition"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -250,7 +246,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
 
         <button
           disabled={currentChapterIndex === chapters.length - 1}
-          onClick={() => setCurrentChapterIndex((p) => Math.min(chapters.length - 1, p + 1))}
+          onClick={() => { const next = Math.min(chapters.length - 1, currentChapterIndex + 1); setCurrentChapterIndex(next); onProgress?.(next, Math.round((next / Math.max(1, chapters.length - 1)) * 100)); }}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-stone-400/30 disabled:opacity-30 hover:bg-stone-200/40 transition"
         >
           <span>Bab Selanjutnya</span>

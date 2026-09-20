@@ -97,15 +97,7 @@ export const CollectionTab: React.FC<CollectionTabProps> = ({
 
   return (
     <div className="collection-shell pb-24 pt-4 sm:pt-6 space-y-6 max-w-[1500px] mx-auto px-4 sm:px-6 lg:pr-8 relative">
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-56 bg-white border-r border-stone-200 flex-col p-6 z-30">
-        <div className="flex items-center gap-3 text-sm font-bold text-stone-800 mb-10"><img src="/logo-lasem-mark.png" alt="Perpustakaan Desa Lasem" className="w-12 h-12 rounded-full object-cover"/><span>Perpustakaan Desa<br/><span className="text-amber-700">Lasem</span></span></div>
-        <nav className="space-y-2 text-sm">
-          <button className="w-full flex items-center gap-3 rounded-xl bg-emerald-50 text-emerald-800 px-3 py-3 font-semibold"><BookOpen className="w-4 h-4"/>Koleksi Buku</button>
-          <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-stone-500 hover:bg-stone-50" onClick={() => onCategoryChange('Semua')}><Search className="w-4 h-4"/>Cari Koleksi</button>
-          <button className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-stone-500 hover:bg-stone-50"><Bookmark className="w-4 h-4"/>Peminjaman</button>
-        </nav>
-        <div className="mt-auto pt-6 border-t border-stone-100"><p className="text-[10px] uppercase tracking-widest text-stone-400 mb-2">Tampilan</p><div className="text-xs text-emerald-800 bg-emerald-50 rounded-lg px-3 py-2">Desktop / Koleksi</div><div className="text-xs text-stone-500 rounded-lg px-3 py-2 mt-1">HP & Tablet tersedia</div></div>
-      </aside>
+
       
       {/* Header Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-stone-200 pb-4">
@@ -256,7 +248,7 @@ export const CollectionTab: React.FC<CollectionTabProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 sm:gap-6">
           {filteredBooks.map((book) => {
             const isDownloaded = downloadedBookIds.includes(book.id);
             const isBorrowed = borrowedBookIds.includes(book.id);
@@ -269,7 +261,7 @@ export const CollectionTab: React.FC<CollectionTabProps> = ({
                 {/* Book Card Top Image & Badges */}
                 <div 
                   onClick={() => onSelectBook(book)}
-                  className="relative aspect-[16/10] bg-stone-100 overflow-hidden cursor-pointer"
+                  className="relative aspect-[3/4] bg-stone-100 overflow-hidden cursor-pointer"
                 >
                   <img
                     src={book.coverImage}

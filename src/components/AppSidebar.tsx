@@ -1,9 +1,14 @@
-import React from 'react';
-import { Home, BookOpen, Bookmark, DownloadCloud, UserRound, Settings, Upload, FilePlus2, LogOut } from 'lucide-react';
-import type { UserRole } from '../types';
-interface Props { currentTab: string; onNavigate: (tab: string) => void; role?: UserRole | null; userName: string; onLogout: () => void; }
-export const AppSidebar: React.FC<Props> = ({ currentTab, onNavigate, role, userName, onLogout }) => {
-  const base = [['home','Beranda',Home],['collection','Koleksi',BookOpen],['borrowing','Peminjaman',Bookmark],['downloads','Unduhan',DownloadCloud],['profile','Profil',UserRound]] as const;
-  const admin = ['admin','pustakawan','kepala_desa','superadmin'].includes(role ?? '');
-  return <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-white border-r border-[#E5E7EB] p-6 flex-col z-30"><div className="flex items-center gap-3 pb-8 border-b border-stone-100"><img src="/logo-lasem-mark.png" alt="Perpustakaan Desa Lasem" className="w-12 h-12 object-cover rounded-full"/><div className="font-bold leading-tight text-[#1E4D3E]">Perpustakaan Desa<br/><span className="text-[#D97706]">Lasem</span></div></div><div className="mt-6 mb-3 px-3 text-xs text-stone-400 truncate">Masuk sebagai <strong className="text-stone-600">{userName}</strong></div><nav className="space-y-1 text-sm">{base.map(([id,label,Icon])=><button key={id} onClick={()=>onNavigate(id)} className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left ${currentTab===id?'bg-emerald-50 text-[#1E4D3E] font-bold':'text-stone-600 hover:bg-stone-50'}`}><Icon className="w-5 h-5"/>{label}</button>)}{admin&&<><div className="pt-6 pb-2 px-3 text-[10px] uppercase tracking-widest text-stone-400">Administrasi</div><button onClick={()=>onNavigate('admin-settings')} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-stone-600 hover:bg-stone-50"><Settings className="w-5 h-5"/>Pengaturan Admin</button><button onClick={()=>onNavigate('admin-books')} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-stone-600 hover:bg-stone-50"><Upload className="w-5 h-5"/>Unggah Buku</button><button onClick={()=>onNavigate('admin-articles')} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-stone-600 hover:bg-stone-50"><FilePlus2 className="w-5 h-5"/>Unggah Artikel</button>{role==='superadmin'&&<button onClick={()=>onNavigate('admin-import')} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-stone-600 hover:bg-stone-50"><Upload className="w-5 h-5"/>Unggah Masal</button>}</>}</nav><button onClick={onLogout} className="mt-auto w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left text-rose-700 hover:bg-rose-50 text-sm"><LogOut className="w-5 h-5"/>Keluar</button></aside>;
+import { NavLink, useParams } from 'react-router-dom';
+import { useAuth } from '../features/auth/AuthContext';
+interface Props { currentTab: string; onNavigate: (tab: string) => void; role?: import('../types').UserRole | null; userName: string; onLogout: () => void; }
+export const AppSidebar = ({ userName, onLogout }: Props) => {
+ const { username } = useParams();
+ const base = `/app/${username}`;
+ const { isAdmin } = useAuth();
+ return <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-white border-r p-6 flex-col overflow-y-auto">
+ <NavLink to={base} end className="flex gap-3 items-center font-bold text-[#1E4D3E]"><img src="/logo-lasem-mark.png" alt="" className="w-12 h-12"/>Perpustakaan Desa Lasem</NavLink>
+ <p className="my-6 text-sm">Masuk sebagai {userName}</p><nav className="space-y-2">
+ {[['','Beranda'],['koleksi','Koleksi'],['peminjaman','Peminjaman'],['unduhan','Unduhan'],['komunitas','Warta & Kreasi'],['profil','Profil']].map(([path,label])=><NavLink key={path} end to={`${base}/${path}`} className={({isActive})=>`block p-3 rounded-xl ${isActive?'bg-emerald-50 text-emerald-900 font-bold':''}`}>{label}</NavLink>)}
+ {isAdmin&&<NavLink className="block p-3 text-emerald-800 font-bold" to={`${base}/admin`}>Administrasi</NavLink>}
+ </nav><button className="mt-auto p-3 text-left text-rose-700" onClick={onLogout}>Keluar</button></aside>;
 };

@@ -6,8 +6,11 @@ button, input, select, textarea { font: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(37, 99, 235, .28); outline-offset: 2px; }
 ::selection { background: #dbeafe; color: #172554; }
 
-/* Satu identitas logo untuk shell Beranda lama yang masih dirender oleh komponen legacy. */
-.target-shell > aside > div:first-child > span { display: none; }
-.target-shell > aside > div:first-child::before { content: ""; display: block; width: 48px; height: 48px; border-radius: 999px; background: #fff url('/logo-lasem-mark.png') center / cover no-repeat; flex: 0 0 auto; }
-.target-shell > aside, .collection-shell > aside { display: none !important; }
-.target-shell > header, .target-shell > main { margin-left: 0 !important; }
+
+.admin-page form { padding: 24px; background: white; border: 1px solid #E5E7EB; border-radius: 16px; display: grid; gap: 16px; }
+.admin-page label { display: grid; gap: 6px; font-size: 14px; }
+.admin-page input:not([type=checkbox]), .admin-page select, .admin-page textarea { width: 100%; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 8px; }
+.admin-page button { padding: 10px 16px; background: #1E4D3E; color: white; border-radius: 8px; }
+.admin-page button:disabled { opacity: .5; cursor: wait; }
+.admin-page td, .admin-page th { padding: 12px; text-align: left; border-bottom: 1px solid #E5E7EB; }
+@media print { aside, nav, button { display: none !important; } main { margin: 0 !important; } }

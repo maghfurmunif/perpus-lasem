@@ -24,6 +24,7 @@ export interface Book {
   author: string;
   category: BookCategory;
   coverImage: string;
+  fileUrl?: string;
   format: BookFormat;
   accessType: AccessType;
   pages: number;
@@ -40,6 +41,8 @@ export interface Book {
   isFeatured?: boolean;
   isPopular?: boolean;
   isNew?: boolean;
+  isPublished?: boolean;
+  publishedAt?: string;
   sampleChapters: {
     title: string;
     content: string;
@@ -80,6 +83,9 @@ export interface Announcement {
   summary: string;
   author: string;
   badge: string;
+  coverImage?: string;
+  contentType?: string;
+  published?: boolean;
 }
 
 export interface BookRequestItem {
@@ -142,4 +148,6 @@ export interface ForumPost {
   content: string;
   likes: number;
   created_at: string;
+  image_url?: string | null;
+  published?: boolean;
 }

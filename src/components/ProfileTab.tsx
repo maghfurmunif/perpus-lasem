@@ -318,65 +318,6 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         </div>
       </section>
 
-      {/* 5. Akses Khusus Perangkat Desa & Pustakawan */}
-      <section className="bg-gradient-to-r from-stone-900 via-emerald-950 to-stone-900 text-white rounded-3xl p-5 sm:p-7 shadow-lg border border-emerald-800/40 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-amber-400" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300 bg-amber-950/70 border border-amber-500/40 px-2 py-0.5 rounded-full">
-              PORTAL PERANGKAT DESA
-            </span>
-          </div>
-          <span className="text-[11px] text-emerald-200">Desa Lasem Sidayu</span>
-        </div>
-
-        <div>
-          <h3 className="font-bold text-base sm:text-lg font-serif">
-            Manajemen Perpustakaan & Laporan Desa
-          </h3>
-          <p className="text-xs text-stone-300 leading-relaxed mt-1">
-            Khusus Kepala Desa, Sekretaris Desa, Kaur Kesra, dan Pengurus Pustakawan untuk mengelola katalog buku, sirkulasi peminjaman warga, verifikasi usulan APBDes, dan cetak laporan resmi Musdes.
-          </p>
-        </div>
-
-        {onOpenAdminMode && (
-          <div className="pt-2">
-            <button
-              onClick={onOpenAdminMode}
-              className="w-full sm:w-auto px-5 py-3 bg-amber-400 hover:bg-amber-500 text-stone-950 font-bold rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition active:scale-95"
-            >
-              <Building2 className="w-4 h-4" />
-              <span>Buka Dashboard Perangkat Desa</span>
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* Role badge & keluar */}
-      <div className="text-center pt-2 space-y-3">
-        {profileRole && (
-          <span className="inline-block text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full">
-            Role: {profileRole}
-          </span>
-        )}
-        <div>
-          <button
-            onClick={onEditProfileClick}
-            className="text-xs text-stone-500 hover:text-stone-800 underline font-medium mr-4"
-          >
-            Perbarui Data Warga / Ubah Nomor HP
-          </button>
-          {onLogout && (
-            <button
-              onClick={onLogout}
-              className="text-xs text-rose-600 hover:text-rose-800 underline font-medium"
-            >
-              Keluar dari Akun
-            </button>
-          )}
-        </div>
-      </div>
 
     </div>
   );

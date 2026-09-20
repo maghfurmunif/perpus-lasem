@@ -14,6 +14,7 @@ interface BottomNavProps {
   activeBorrowCount: number;
   downloadCount: number;
   pendingRequestsCount?: number;
+  isAdmin?: boolean;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -22,6 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   activeBorrowCount,
   downloadCount,
   pendingRequestsCount = 0,
+  isAdmin = false,
 }) => {
   const navItems = [
     {
@@ -54,12 +56,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       icon: User,
       badge: null,
     },
-    {
-      id: 'admin',
-      label: 'Portal Desa',
-      icon: Building2,
-      badge: pendingRequestsCount > 0 ? pendingRequestsCount : null,
-    },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: Building2, badge: pendingRequestsCount > 0 ? pendingRequestsCount : null }] : []),
+
   ];
 
   return (

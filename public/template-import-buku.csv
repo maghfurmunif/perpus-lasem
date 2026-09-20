@@ -1,2 +1,2 @@
-title,author,category,format,access_type,pages,file_size,description,isbn,year,publisher,cover_image,tags,total_copies,available_copies,is_featured,is_popular,is_new
-Panduan Tambak Sidayu,Tim Pesisir Sidayu,Pertanian,PDF,Akses Terbuka,120,2 MB,Panduan pengelolaan tambak untuk warga,978-000-000-000-1,2026,Perpustakaan Lasem Sidayu,https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600,Tambak|Sidayu|Pesisir,10,10,true,true,true
+title,author,category,format,access_type,pages,file_size,description,isbn,year,publisher,cover_image,file_url,tags,total_copies,available_copies,is_featured,is_popular,is_new
+Panduan Tambak Sidayu,Tim Pesisir Sidayu,Pertanian,PDF,Akses Terbuka,120,2 MB,Panduan pengelolaan tambak untuk warga,978-000-000-000-1,2026,Perpustakaan Lasem Sidayu,https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600,https://contoh.test/panduan-tambak.pdf,Tambak|Sidayu|Pesisir,10,10,true,true,true

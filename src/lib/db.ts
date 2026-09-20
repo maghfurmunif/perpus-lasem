@@ -3,7 +3,6 @@
  * Semua query Supabase terpusat di sini. Fase 2, 3, dan 5 memakai modul ini.
  */
 import { supabase, hasSupabase } from './supabase'
-import { INITIAL_BOOKS, INITIAL_ANNOUNCEMENTS, INITIAL_BOOK_REQUESTS } from '../data/mockBooks'
 import type {
   Book,
   Announcement,
@@ -23,6 +22,7 @@ type BookRow = {
   author: string
   category: string
   cover_image: string | null
+  file_url?: string | null
   format: string
   access_type: string
   pages: number
@@ -36,6 +36,8 @@ type BookRow = {
   is_featured: boolean
   is_popular: boolean
   is_new: boolean
+  is_published?: boolean
+  published_at?: string | null
   total_copies: number
   available_copies: number
 }
@@ -47,6 +49,7 @@ function rowToBook(row: BookRow): Book {
     author: row.author,
     category: row.category as Book['category'],
     coverImage: row.cover_image ?? '',
+    fileUrl: row.file_url ?? undefined,
     format: row.format as Book['format'],
     accessType: row.access_type as Book['accessType'],
     pages: row.pages,
@@ -63,6 +66,8 @@ function rowToBook(row: BookRow): Book {
     isFeatured: row.is_featured,
     isPopular: row.is_popular,
     isNew: row.is_new,
+    isPublished: row.is_published ?? true,
+    publishedAt: row.published_at ?? undefined,
     sampleChapters: row.sample_chapters ?? [],
     reviews: [],
   }
@@ -74,6 +79,7 @@ function bookToRow(book: Partial<Book> & { title: string; author: string }): Par
     author: book.author,
     category: book.category,
     cover_image: book.coverImage || null,
+    file_url: book.fileUrl || null,
     format: book.format,
     access_type: book.accessType,
     pages: book.pages,
@@ -87,6 +93,8 @@ function bookToRow(book: Partial<Book> & { title: string; author: string }): Par
     is_featured: book.isFeatured,
     is_popular: book.isPopular,
     is_new: book.isNew,
+    is_published: book.isPublished,
+    published_at: book.publishedAt ?? null,
     total_copies: book.totalCopies,
     available_copies: book.availableCopies,
   }
@@ -96,7 +104,7 @@ function bookToRow(book: Partial<Book> & { title: string; author: string }): Par
 // PHASE 2: BUKU
 // ------------------------------------------------------------
 export async function fetchBooks(): Promise<{ data: Book[]; live: boolean }> {
-  if (!hasSupabase) return { data: INITIAL_BOOKS, live: false }
+  if (!hasSupabase) throw new Error('Koneksi Supabase belum dikonfigurasi.')
 
   const { data, error } = await supabase
     .from('books')
@@ -104,8 +112,7 @@ export async function fetchBooks(): Promise<{ data: Book[]; live: boolean }> {
     .order('created_at', { ascending: false })
 
   if (error || !data) {
-    console.warn('fetchBooks fallback demo:', error?.message)
-    return { data: INITIAL_BOOKS, live: false }
+    throw new Error(error?.message ?? 'Gagal memuat data Supabase.')
   }
 
   const books = (data as BookRow[]).map(rowToBook)
@@ -134,6 +141,38 @@ export async function fetchBooks(): Promise<{ data: Book[]; live: boolean }> {
   return { data: books, live: true }
 }
 
+export async function fetchPublishedBooks(): Promise<{ data: Book[]; live: boolean }> {
+  if (!hasSupabase) throw new Error('Koneksi Supabase belum dikonfigurasi.')
+  const { data, error } = await supabase.from('books').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false })
+  if (error || !data) throw new Error(error?.message ?? 'Gagal memuat buku terbit.')
+  return { data: (data as BookRow[]).map(rowToBook), live: true }
+}
+
+export async function getReadingProgress(userId: string, bookId: string) {
+  const { data, error } = await supabase.from('reading_progress').select('chapter,progress,updated_at').eq('user_id', userId).eq('book_id', bookId).maybeSingle()
+  if (error) throw new Error(error.message); return data as { chapter: number; progress: number; updated_at: string } | null
+}
+
+export async function saveReadingProgress(userId: string, bookId: string, chapter: number, progress: number) {
+  const { error } = await supabase.from('reading_progress').upsert({ user_id: userId, book_id: bookId, chapter, progress, updated_at: new Date().toISOString() }, { onConflict: 'user_id,book_id' })
+  if (error) throw new Error(error.message)
+}
+
+export async function getFollowedBookIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('book_follows').select('book_id').eq('user_id', userId)
+  if (error) throw new Error(error.message); return (data ?? []).map((row) => row.book_id as string)
+}
+
+export async function setBookFollow(userId: string, bookId: string, follow: boolean) {
+  const result = follow ? await supabase.from('book_follows').upsert({ user_id: userId, book_id: bookId }) : await supabase.from('book_follows').delete().eq('user_id', userId).eq('book_id', bookId)
+  if (result.error) throw new Error(result.error.message)
+}
+
+export async function setBookPublished(bookId: string, published: boolean, userId: string) {
+  const { error } = await supabase.from('books').update({ is_published: published, published_at: published ? new Date().toISOString() : null, published_by: published ? userId : null }).eq('id', bookId)
+  if (error) throw new Error(error.message)
+}
+
 export async function insertBook(book: Book): Promise<Book | null> {
   const row = bookToRow(book)
   const { data, error } = await supabase.from('books').insert(row).select('*').single()
@@ -152,6 +191,7 @@ export async function bulkUpsertBooks(rows: Record<string, unknown>[]): Promise<
     access_type: String(r.access_type ?? r.accessType ?? 'Akses Terbuka'),
     pages: Number(r.pages ?? 0), file_size: String(r.file_size ?? r.fileSize ?? '-'),
     description: String(r.description ?? ''), isbn: r.isbn ? String(r.isbn) : null,
+    file_url: r.file_url ? String(r.file_url) : (r.fileUrl ? String(r.fileUrl) : null),
     year: Number(r.year ?? new Date().getFullYear()), publisher: String(r.publisher ?? 'Perpustakaan Lasem Sidayu'),
     cover_image: r.cover_image ? String(r.cover_image) : (r.coverImage ? String(r.coverImage) : null),
     tags: String(r.tags ?? '').split('|').map((v) => v.trim()).filter(Boolean),
@@ -160,14 +200,14 @@ export async function bulkUpsertBooks(rows: Record<string, unknown>[]): Promise<
     is_popular: String(r.is_popular ?? 'false').toLowerCase() === 'true',
     is_new: String(r.is_new ?? 'true').toLowerCase() !== 'false',
   })).filter((r) => r.title)
-  const { error } = await supabase.from('books').upsert(payload, { onConflict: 'isbn', ignoreDuplicates: false })
+  const { error } = await supabase.rpc('import_catalog', { p_rows: payload })
   return error ? { ok: false, count: 0, error: error.message } : { ok: true, count: payload.length }
 }
 
 export function booksToCsv(books: Book[]): string {
-  const headers = ['title','author','category','format','access_type','pages','file_size','description','isbn','year','publisher','cover_image','tags','total_copies','available_copies','is_featured','is_popular','is_new']
+  const headers = ['title','author','category','format','access_type','pages','file_size','description','isbn','year','publisher','cover_image','file_url','tags','total_copies','available_copies','is_featured','is_popular','is_new']
   const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
-  return [headers.join(','), ...books.map((b) => [b.title,b.author,b.category,b.format,b.accessType,b.pages,b.fileSize,b.description,b.isbn ?? '',b.year,b.publisher,b.coverImage,b.tags.join('|'),b.totalCopies,b.availableCopies,b.isFeatured ?? false,b.isPopular ?? false,b.isNew ?? true].map(esc).join(','))].join('\n')
+  return [headers.join(','), ...books.map((b) => [b.title,b.author,b.category,b.format,b.accessType,b.pages,b.fileSize,b.description,b.isbn ?? '',b.year,b.publisher,b.coverImage,b.fileUrl ?? '',b.tags.join('|'),b.totalCopies,b.availableCopies,b.isFeatured ?? false,b.isPopular ?? false,b.isNew ?? true].map(esc).join(','))].join('\n')
 }
 
 export async function updateBook(book: Book): Promise<Book | null> {
@@ -356,15 +396,7 @@ export async function createBorrowing(
 ): Promise<{ ok: boolean; error?: string }> {
   if (!hasSupabase) return { ok: false, error: 'Mode demo: koneksi database belum aktif.' }
 
-  const due = new Date()
-  due.setDate(due.getDate() + days)
-
-  const { error } = await supabase.from('borrowings').insert({
-    book_id: bookId,
-    borrower_id: borrowerId,
-    due_date: due.toISOString().slice(0, 10),
-    status: 'active',
-  })
+  const { error } = await supabase.rpc('borrow_book', { p_book_id: bookId })
 
   if (error) {
     // Paling sering: stok habis dicek RLS/trigger, atau buku fisik tidak tersedia
@@ -375,13 +407,7 @@ export async function createBorrowing(
 }
 
 export async function extendBorrowing(recordId: string): Promise<boolean> {
-  const due = new Date()
-  due.setDate(due.getDate() + 7)
-
-  const { error } = await supabase
-    .from('borrowings')
-    .update({ status: 'extended', extended: true, due_date: due.toISOString().slice(0, 10) })
-    .eq('id', recordId)
+  const { error } = await supabase.rpc('extend_loan', { p_loan_id: recordId })
 
   if (error) {
     console.error('extendBorrowing:', error.message)
@@ -391,10 +417,7 @@ export async function extendBorrowing(recordId: string): Promise<boolean> {
 }
 
 export async function returnBorrowing(recordId: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('borrowings')
-    .update({ status: 'returned' })
-    .eq('id', recordId)
+  const { error } = await supabase.rpc('return_loan', { p_loan_id: recordId })
 
   if (error) {
     console.error('returnBorrowing:', error.message)
@@ -414,17 +437,15 @@ function translateDbError(msg: string): string {
 // ------------------------------------------------------------
 // PHASE 5: WARTA / AGENDA
 // ------------------------------------------------------------
-export async function fetchAnnouncements(): Promise<{ data: Announcement[]; live: boolean }> {
-  if (!hasSupabase) return { data: INITIAL_ANNOUNCEMENTS, live: false }
+export async function fetchAnnouncements(publishedOnly?: boolean): Promise<{ data: Announcement[]; live: boolean }> {
+  if (!hasSupabase) throw new Error('Koneksi Supabase belum dikonfigurasi.')
 
-  const { data, error } = await supabase
-    .from('announcements')
-    .select('*')
-    .order('created_at', { ascending: false })
+  let query = supabase.from('announcements').select('*').order('created_at', { ascending: false })
+  if (publishedOnly !== undefined) query = query.eq('published', publishedOnly)
+  const { data, error } = await query
 
   if (error || !data) {
-    console.warn('fetchAnnouncements fallback:', error?.message)
-    return { data: INITIAL_ANNOUNCEMENTS, live: false }
+    throw new Error(error?.message ?? 'Gagal memuat data Supabase.')
   }
 
   return {
@@ -436,6 +457,9 @@ export async function fetchAnnouncements(): Promise<{ data: Announcement[]; live
       summary: a.summary,
       author: a.author,
       badge: a.badge,
+      coverImage: a.cover_image ?? undefined,
+      contentType: a.content_type ?? 'berita',
+      published: a.published ?? true,
     })),
     live: true,
   }
@@ -447,8 +471,12 @@ export async function insertAnnouncement(a: {
   summary: string
   author: string
   badge: string
+  content_type?: string
+  cover_image?: string | null
+  published?: boolean
 }): Promise<Announcement | null> {
-  const { data, error } = await supabase.from('announcements').insert(a).select('*').single()
+  const normalized = { ...a, content_type: a.content_type === 'berita' ? 'artikel' : (a.content_type ?? 'artikel') }
+  const { data, error } = await supabase.from('announcements').insert(normalized).select('*').single()
   if (error) {
     console.error('insertAnnouncement:', error.message)
     return null
@@ -461,6 +489,9 @@ export async function insertAnnouncement(a: {
     summary: data.summary,
     author: data.author,
     badge: data.badge,
+    coverImage: data.cover_image ?? undefined,
+    contentType: data.content_type ?? 'berita',
+    published: data.published ?? false,
   }
 }
 
@@ -473,11 +504,29 @@ export async function deleteAnnouncement(id: string): Promise<boolean> {
   return true
 }
 
+export async function setAnnouncementPublished(id: string, published: boolean, userId: string): Promise<void> {
+  const { data, error } = await supabase.from('announcements').update({
+    published,
+    published_at: published ? new Date().toISOString() : null,
+    created_by: userId,
+  }).eq('id', id).select('id,published').maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error('Status tidak dapat diverifikasi: konten tidak ditemukan atau izin database menolak pengembalian data update.')
+  if (data.published !== published) {
+    throw new Error(`Database tidak menyimpan status ${published ? 'terbit' : 'draft'} untuk konten ini.`)
+  }
+}
+
+export async function updateAnnouncement(id: string, values: { title: string; category: string; summary: string; content_type: string; cover_image?: string | null }): Promise<void> {
+  const { error } = await supabase.from('announcements').update(values).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 // ------------------------------------------------------------
 // USULAN BUKU WARGA
 // ------------------------------------------------------------
 export async function fetchBookRequests(): Promise<{ data: BookRequestItem[]; live: boolean }> {
-  if (!hasSupabase) return { data: INITIAL_BOOK_REQUESTS, live: false }
+  if (!hasSupabase) throw new Error('Koneksi Supabase belum dikonfigurasi.')
 
   const { data, error } = await supabase
     .from('book_requests')
@@ -485,8 +534,7 @@ export async function fetchBookRequests(): Promise<{ data: BookRequestItem[]; li
     .order('created_at', { ascending: false })
 
   if (error || !data) {
-    console.warn('fetchBookRequests fallback:', error?.message)
-    return { data: INITIAL_BOOK_REQUESTS, live: false }
+    throw new Error(error?.message ?? 'Gagal memuat data Supabase.')
   }
 
   return {
@@ -520,6 +568,7 @@ export async function insertBookRequest(req: {
   const { data, error } = await supabase
     .from('book_requests')
     .insert({
+      requester_id: (await supabase.auth.getUser()).data.user?.id,
       title: req.title,
       author: req.author || null,
       category: req.category,
@@ -578,7 +627,23 @@ export async function fetchForumPosts(): Promise<ForumPost[]> {
     .order('created_at', { ascending: false })
 
   if (error || !data) return []
-  return data as ForumPost[]
+  return (data as ForumPost[]).filter((post) => post.published !== false)
+}
+
+export async function fetchAllForumPosts(): Promise<ForumPost[]> {
+  if (!hasSupabase) return []
+  const { data, error } = await supabase.from('forum_posts').select('*').order('created_at', { ascending: false })
+  return error || !data ? [] : data as ForumPost[]
+}
+
+export async function setForumPostPublished(id: string, published: boolean): Promise<void> {
+  const { error } = await supabase.from('forum_posts').update({ published }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteForumPost(id: string): Promise<boolean> {
+  const { error } = await supabase.from('forum_posts').delete().eq('id', id)
+  return !error
 }
 
 export async function insertForumPost(post: {

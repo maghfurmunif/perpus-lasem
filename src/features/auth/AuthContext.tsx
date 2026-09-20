@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import type { Profile, UserRole } from "../../types";
 import { supabase } from "../../lib/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -30,34 +30,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileRequest = useRef(0);
 
   const loadProfile = useCallback(async (id: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", id)
-      .single();
-    setProfile((data as Profile) ?? null);
+    const request = ++profileRequest.current;
+    setLoading(true); setProfile(null);
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
+      if (request === profileRequest.current) setProfile(error ? null : data as Profile);
+    } finally { if (request === profileRequest.current) setLoading(false); }
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const current = data.session?.user ?? null;
+    let disposed = false;
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (disposed) return;
+      const current = session?.user ?? null;
       setUser(current);
-      if (current) loadProfile(current.id);
-      setLoading(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        const current = session?.user ?? null;
-        setUser(current);
-        if (current) loadProfile(current.id);
-        else setProfile(null);
+      if (current) {
+        setLoading(true);
+        // Avoid awaiting a Supabase query while the auth callback holds its lock.
+        queueMicrotask(() => { if (!disposed) void loadProfile(current.id); });
+      } else {
+        profileRequest.current++; setProfile(null); setLoading(false);
       }
-    );
-
-    return () => listener.subscription.unsubscribe();
+    });
+    return () => { disposed = true; profileRequest.current++; listener.subscription.unsubscribe(); };
   }, [loadProfile]);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -102,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const role = profile?.role ?? null;
   const isAdmin =
-    role === "superadmin" || role === "admin" || role === "pustakawan" || role === "kepala_desa";
+    !!profile?.aktif && (role === "superadmin" || role === "admin" || role === "pustakawan" || role === "kepala_desa");
 
   return (
     <AuthContext.Provider

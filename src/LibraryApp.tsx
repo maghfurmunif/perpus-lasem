@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Book, BookCategory, BorrowRecord, DownloadItem, Announcement, BookReview, BookRequestItem } from './types';
-import { INITIAL_BOOKS, INITIAL_ANNOUNCEMENTS, INITIAL_BOOK_REQUESTS } from './data/mockBooks';
-import { Header } from './components/Header';
+
+
 import { BottomNav } from './components/BottomNav';
 import { TargetHomeTab } from './components/TargetHomeTab';
 import { CollectionTab } from './components/CollectionTab';
 import { BorrowingTab } from './components/BorrowingTab';
 import { DownloadsTab } from './components/DownloadsTab';
 import { ProfileTab } from './components/ProfileTab';
-import { AdminDashboard } from './components/AdminDashboard';
+
 import { BookDetailModal } from './components/BookDetailModal';
 import { ReaderModal } from './components/ReaderModal';
 import { LoginModal } from './components/LoginModal';
@@ -26,16 +26,23 @@ import {
   removeDownloadedBook,
 } from './lib/offline';
 
+const bookSlug = (title: string) => title.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 export default function LibraryApp() {
   const { user, profile, isAdmin, logout, updateProfile } = useAuth();
   const { username } = useParams<{ username: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // App state
   const [books, setBooks] = useState<Book[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [bookRequests, setBookRequests] = useState<BookRequestItem[]>([]);
   const [villageName, setVillageName] = useState<string>('Lasem Sidayu');
-  const [currentTab, setCurrentTab] = useState<string>('home');
+  const suffix = location.pathname.split('/').slice(3);
+  const currentTab = ({ koleksi: 'collection', peminjaman: 'borrowing', unduhan: 'downloads', profil: 'profile', komunitas: 'community' } as Record<string, string>)[suffix[0]] ?? 'home';
+  const [loadingData, setLoadingData] = useState(true);
+  const [dataError, setDataError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'Semua'>('Semua');
 
 
@@ -50,9 +57,11 @@ export default function LibraryApp() {
   // Borrow & download records
   const [borrowRecords, setBorrowRecords] = useState<BorrowRecord[]>([]);
   const [downloadItems, setDownloadItems] = useState<DownloadItem[]>([]);
+  const [followedBookIds, setFollowedBookIds] = useState<string[]>([]);
 
   // Modal States
-  const [selectedBookForDetail, setSelectedBookForDetail] = useState<Book | null>(null);
+  const selectedBookForDetail = suffix[0] === 'koleksi' && suffix[1]
+    ? books.find(b => bookSlug(b.title) === suffix[1] || b.id === suffix[1]) ?? null : null;
   const [selectedBookForReader, setSelectedBookForReader] = useState<Book | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isRequestBookModalOpen, setIsRequestBookModalOpen] = useState(false);
@@ -63,25 +72,21 @@ export default function LibraryApp() {
   useEffect(() => {
     if (user && profile && (!profile.nama_lengkap || !profile.nomor_wa || !profile.alamat)) setIsLoginModalOpen(true);
   }, [user, profile]);
+  useEffect(() => { if (user) void db.getFollowedBookIds(user.id).then(setFollowedBookIds).catch(() => undefined); }, [user]);
+  const toggleFollow = async (book: Book) => { if (!user) return; const follow = !followedBookIds.includes(book.id); try { await db.setBookFollow(user.id, book.id, follow); setFollowedBookIds((ids) => follow ? [...ids, book.id] : ids.filter((id) => id !== book.id)); } catch (e) { showToast(e instanceof Error ? e.message : 'Gagal mengubah mengikuti.'); } };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Gerbang akses: Portal Desa hanya untuk role pengelola (Fase 1: role)
-  const openAdmin = () => {
-    setCurrentTab('admin');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
   const handleTabChange = (tab: string) => {
-    if (tab.startsWith('admin-')) tab = 'admin';
-    if (tab === 'admin' && !isAdmin) {
-      showToast('Portal Desa hanya dapat dibuka oleh pustakawan & perangkat desa.');
-      return;
-    }
-    setCurrentTab(tab);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const paths: Record<string, string> = { home: '', collection: 'koleksi', borrowing: 'peminjaman', downloads: 'unduhan', profile: 'profil', community: 'komunitas', admin: 'admin', 'admin-settings': 'pengaturan-admin', 'admin-books': 'katalog-buku/upload-buku', 'admin-articles': 'unggah-artikel', 'admin-import': 'katalog-buku/unggah-masal' };
+    navigate(`/app/${username}/${paths[tab] ?? ''}`);
+  };
+  const openBookDetail = (book: Book) => {
+    const duplicate = books.filter(b => bookSlug(b.title) === bookSlug(book.title)).length > 1;
+    navigate(`/app/${username}/koleksi/${duplicate ? book.id : bookSlug(book.title)}`);
   };
 
   // Derived counts
@@ -94,14 +99,18 @@ export default function LibraryApp() {
   // PHASE 2: Muat buku + warta + usulan dari database Supabase
   // ----------------------------------------------------------
   const loadAll = useCallback(async () => {
+    setLoadingData(true); setDataError('');
+    try {
     const [booksRes, ancRes, reqRes] = await Promise.all([
       db.fetchBooks(),
-      db.fetchAnnouncements(),
+      db.fetchAnnouncements(true),
       db.fetchBookRequests(),
     ]);
     setBooks(booksRes.data);
     setAnnouncements(ancRes.data);
     setBookRequests(reqRes.data);
+    } catch (error) { setDataError(error instanceof Error ? error.message : 'Gagal memuat data.'); }
+    finally { setLoadingData(false); }
   }, []);
 
   useEffect(() => {
@@ -151,54 +160,21 @@ export default function LibraryApp() {
   }, [books.length]);
 
   // Handle Download Book (offline save - Phase 4)
-  const handleDownloadBook = (book: Book) => {
-    if (downloadedBookIds.includes(book.id)) {
-      setCurrentTab('downloads');
-      return;
-    }
-
-    // Cek apakah buku punya konten baca offline (sample chapters)
-    const hasContent = book.sampleChapters && book.sampleChapters.length > 0;
-
-    const newItem: DownloadItem = {
-      bookId: book.id,
-      title: book.title,
-      author: book.author,
-      coverImage: book.coverImage,
-      format: book.format,
-      fileSize: book.fileSize,
-      downloadDate: 'Baru saja',
-      progress: 15,
-      isCompleted: false,
-    };
-
-    setDownloadItems((prev) => [newItem, ...prev.filter((d) => d.bookId !== book.id)]);
-
-    // Simulasi progres unduh lalu simpan ke localStorage
-    let currentProgress = 15;
-    const timer = setInterval(() => {
-      currentProgress += Math.floor(Math.random() * 25) + 15;
-      if (currentProgress >= 100) {
-        clearInterval(timer);
-        if (hasContent) saveDownloadedBook(book);
-        setDownloadItems((prev) =>
-          prev.map((item) =>
-            item.bookId === book.id
-              ? { ...item, progress: 100, isCompleted: true, downloadDate: 'Baru saja' }
-              : item
-          )
-        );
-        showToast(hasContent
-          ? `Buku "${book.title}" tersimpan, bisa dibaca offline.`
-          : `Buku "${book.title}" ditandai (belum ada konten digital lengkap).`);
-      } else {
-        setDownloadItems((prev) =>
-          prev.map((item) =>
-            item.bookId === book.id ? { ...item, progress: currentProgress } : item
-          )
-        );
-      }
-    }, 400);
+  const handleDownloadBook = async (book: Book) => {
+    if (book.accessType === 'Lisensi Terbatas' && !borrowedBookIds.includes(book.id)) { showToast('Pinjam buku terlebih dahulu.'); return; }
+    try {
+      if (!book.fileUrl && !book.sampleChapters.length) throw new Error('Konten digital belum tersedia.');
+      if (book.fileUrl) {
+        const response = await fetch(book.fileUrl);
+        if (!response.ok) throw new Error('File gagal diunduh.');
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob); const link = document.createElement('a');
+        link.href = url; link.download = book.title + '.' + book.format.toLowerCase(); link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else saveDownloadedBook(book);
+      setDownloadItems(prev => [{ bookId: book.id, title: book.title, author: book.author, coverImage: book.coverImage, format: book.format, fileSize: book.fileSize, downloadDate: new Date().toLocaleDateString('id-ID'), progress: 100, isCompleted: true }, ...prev.filter(d => d.bookId !== book.id)]);
+      showToast(book.fileUrl ? 'File berhasil diunduh ke perangkat.' : 'Konten tersedia tersimpan di perangkat.');
+    } catch (error) { showToast((error as Error).message); }
   };
 
   // Handle Delete Download
@@ -213,7 +189,7 @@ export default function LibraryApp() {
   const handleBorrowBook = async (book: Book) => {
     const isAlreadyBorrowed = borrowedBookIds.includes(book.id);
     if (isAlreadyBorrowed) {
-      setCurrentTab('borrowing');
+      handleTabChange('borrowing');
       return;
     }
 
@@ -236,7 +212,7 @@ export default function LibraryApp() {
     showToast(`Peminjaman "${book.title}" berhasil diajukan! Jatuh tempo 14 hari.`);
     await loadBorrowings();
     await loadAll();
-    setCurrentTab('borrowing');
+    handleTabChange('borrowing');
   };
 
   const handleExtendBorrow = async (recordId: string) => {
@@ -296,7 +272,7 @@ export default function LibraryApp() {
         );
       }
     });
-  }, [selectedBookForDetail]);
+  }, [selectedBookForDetail?.id]);
 
   // ----------------------------------------------------------
   // WhatsApp helpers
@@ -312,94 +288,6 @@ export default function LibraryApp() {
   };
 
   // ----------------------------------------------------------
-  // Admin actions (live ke database bila tersedia)
-  // ----------------------------------------------------------
-  const handleAddBook = async (newBook: Book) => {
-    if (hasSupabase) {
-      const saved = await db.insertBook({ ...newBook, title: newBook.title, author: newBook.author });
-      if (saved) {
-        setBooks((prev) => [saved, ...prev]);
-        showToast('Buku baru tersimpan ke database.');
-        return;
-      }
-      showToast('Gagal simpan ke database (cek role pengelola).');
-      return;
-    }
-    setBooks((prev) => [newBook, ...prev]);
-  };
-
-  const handleUpdateBook = async (updatedBook: Book) => {
-    if (hasSupabase) {
-      const saved = await db.updateBook(updatedBook);
-      if (!saved) {
-        showToast('Gagal update ke database (cek role pengelola).');
-        return;
-      }
-      setBooks((prev) => prev.map((b) => (b.id === saved.id ? saved : b)));
-      return;
-    }
-    setBooks((prev) => prev.map((b) => (b.id === updatedBook.id ? updatedBook : b)));
-  };
-
-  const handleDeleteBook = async (bookId: string) => {
-    if (hasSupabase) {
-      const ok = await db.deleteBook(bookId);
-      if (!ok) {
-        showToast('Gagal hapus dari database (cek role pengelola).');
-        return;
-      }
-    }
-    setBooks((prev) => prev.filter((b) => b.id !== bookId));
-    showToast('Buku dihapus dari katalog.');
-  };
-
-  const handleUpdateRequestStatus = async (
-    requestId: string,
-    status: 'approved' | 'rejected' | 'fulfilled',
-    adminNotes?: string
-  ) => {
-    if (hasSupabase) {
-      const ok = await db.updateBookRequestStatus(requestId, status, adminNotes);
-      if (!ok) {
-        showToast('Gagal update status usulan.');
-        return;
-      }
-    }
-    setBookRequests((prev) =>
-      prev.map((r) => (r.id === requestId ? { ...r, status, notes: adminNotes } : r))
-    );
-  };
-
-  const handleAddAnnouncement = async (newAnc: Announcement) => {
-    if (hasSupabase) {
-      const saved = await db.insertAnnouncement({
-        title: newAnc.title,
-        category: newAnc.category,
-        summary: newAnc.summary,
-        author: newAnc.author,
-        badge: newAnc.badge,
-      });
-      if (saved) {
-        setAnnouncements((prev) => [saved, ...prev]);
-        return;
-      }
-      showToast('Gagal publikasikan warta ke database.');
-      return;
-    }
-    setAnnouncements((prev) => [newAnc, ...prev]);
-  };
-
-  const handleDeleteAnnouncement = async (id: string) => {
-    if (hasSupabase) {
-      const ok = await db.deleteAnnouncement(id);
-      if (!ok) {
-        showToast('Gagal hapus warta.');
-        return;
-      }
-    }
-    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
-  };
-
   const handleCreateBookRequest = async (req: {
     title: string;
     author: string;
@@ -421,14 +309,8 @@ export default function LibraryApp() {
       showToast('Gagal mengirim usulan (cek koneksi).');
       return;
     }
-    const newReq: BookRequestItem = {
-      id: `req-${Date.now()}`,
-      ...req,
-      requesterDusun: 'Krajan (Lasem)',
-      requestDate: 'Hari ini',
-      status: 'pending',
-    };
-    setBookRequests((prev) => [newReq, ...prev]);
+    showToast('Koneksi server tidak tersedia.');
+
   };
 
   // Helper for font size class
@@ -444,7 +326,7 @@ export default function LibraryApp() {
   };
 
   // Loading state awal
-  if (books.length === 0 && announcements.length === 0) {
+  if (loadingData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-[#F8FAF8] text-stone-500 text-sm">
         <div className="w-8 h-8 rounded-full border-[3px] border-emerald-600 border-t-transparent animate-spin" />
@@ -452,6 +334,8 @@ export default function LibraryApp() {
       </div>
     );
   }
+
+  if (dataError) return <div className="p-8" role="alert"><h1>Data belum dapat dimuat</h1><p>{dataError}</p><button onClick={loadAll}>Coba lagi</button></div>;
 
   // Main interactive UI content
   const appContent = (
@@ -468,14 +352,16 @@ export default function LibraryApp() {
 
       {/* Dynamic Main View */}
       <AppSidebar currentTab={currentTab} onNavigate={handleTabChange} role={profile?.role} userName={userName} onLogout={logout} />
-      <main className="flex-1 lg:ml-64">
+      <main className="flex-1 min-w-0 lg:ml-64">
+        {suffix[0] === 'koleksi' && suffix[1] && !selectedBookForDetail && <p role="alert" className="p-6">Buku tidak ditemukan. Pilih buku dari koleksi.</p>}
         {currentTab === 'home' && (
           <TargetHomeTab
             books={books}
-            onSelectBook={(b) => setSelectedBookForDetail(b)}
+            announcements={announcements}
+            onSelectBook={openBookDetail}
             onReadBook={(b) => setSelectedBookForReader(b)}
-            onSearchFocus={() => setCurrentTab('collection')}
-            onNavigate={setCurrentTab}
+            onSearchFocus={() => handleTabChange('collection')}
+            onNavigate={handleTabChange}
             onLogout={logout}
           />
         )}
@@ -485,7 +371,7 @@ export default function LibraryApp() {
             books={books}
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
-            onSelectBook={(b) => setSelectedBookForDetail(b)}
+            onSelectBook={openBookDetail}
             onBorrowBook={handleBorrowBook}
             onDownloadBook={handleDownloadBook}
             onReadBook={(b) => setSelectedBookForReader(b)}
@@ -503,7 +389,7 @@ export default function LibraryApp() {
               const found = books.find((b) => b.id === bookId);
               if (found) setSelectedBookForReader(found);
             }}
-            onBrowseCollection={() => setCurrentTab('collection')}
+            onBrowseCollection={() => handleTabChange('collection')}
             onWhatsAppReminder={handleWhatsAppReminder}
           />
         )}
@@ -516,7 +402,7 @@ export default function LibraryApp() {
               if (found) setSelectedBookForReader(found);
             }}
             onDeleteDownload={handleDeleteDownload}
-            onBrowseBooks={() => setCurrentTab('collection')}
+            onBrowseBooks={() => handleTabChange('collection')}
           />
         )}
 
@@ -542,33 +428,13 @@ export default function LibraryApp() {
             onRequestBookClick={() => setIsRequestBookModalOpen(true)}
             onWhatsAppClick={handleOpenWhatsAppGeneral}
             onEditProfileClick={() => setIsLoginModalOpen(true)}
-            onOpenAdminMode={isAdmin ? openAdmin : undefined}
+            onOpenAdminMode={isAdmin ? () => handleTabChange('admin') : undefined}
             profileRole={profile?.role}
             onLogout={logout}
           />
         )}
 
-        {currentTab === 'admin' && isAdmin && (
-          <AdminDashboard
-            books={books}
-            borrowRecords={borrowRecords}
-            bookRequests={bookRequests}
-            announcements={announcements}
-            villageName={villageName}
-            onAddBook={handleAddBook}
-            onUpdateBook={handleUpdateBook}
-            onDeleteBook={handleDeleteBook}
-            onUpdateRequestStatus={handleUpdateRequestStatus}
-            onAddAnnouncement={handleAddAnnouncement}
-            onDeleteAnnouncement={handleDeleteAnnouncement}
-            onReturnBorrow={handleReturnBorrow}
-            onExtendBorrow={handleExtendBorrow}
-            onBackToUserMode={() => {
-              setCurrentTab('home');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
-        )}
+
       </main>
 
       {/* Mobile Sticky Bottom Navigation */}
@@ -578,23 +444,27 @@ export default function LibraryApp() {
         activeBorrowCount={activeBorrowCount}
         downloadCount={downloadCount}
         pendingRequestsCount={isAdmin ? bookRequests.filter((r) => r.status === 'pending').length : 0}
+        isAdmin={isAdmin}
       />
 
       {/* Modals */}
       <BookDetailModal
         book={selectedBookForDetail}
-        onClose={() => setSelectedBookForDetail(null)}
+        onClose={() => navigate(`/app/${username}/koleksi`)}
         onRead={(b) => setSelectedBookForReader(b)}
         onDownload={handleDownloadBook}
         onBorrow={handleBorrowBook}
         isDownloaded={selectedBookForDetail ? downloadedBookIds.includes(selectedBookForDetail.id) : false}
         isBorrowed={selectedBookForDetail ? borrowedBookIds.includes(selectedBookForDetail.id) : false}
         onAddReview={handleAddReview}
+        isFollowed={selectedBookForDetail ? followedBookIds.includes(selectedBookForDetail.id) : false}
+        onToggleFollow={() => { if (selectedBookForDetail) void toggleFollow(selectedBookForDetail); }}
       />
 
       <ReaderModal
         book={selectedBookForReader}
         onClose={() => setSelectedBookForReader(null)}
+        onProgress={(chapter, progress) => { if (user && selectedBookForReader) void db.saveReadingProgress(user.id, selectedBookForReader.id, chapter, progress); }}
         onDownload={handleDownloadBook}
         isDownloaded={selectedBookForReader ? downloadedBookIds.includes(selectedBookForReader.id) : false}
       />

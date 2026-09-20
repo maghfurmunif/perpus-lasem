@@ -26,6 +26,8 @@ interface BookDetailModalProps {
   isDownloaded: boolean;
   isBorrowed: boolean;
   onAddReview: (bookId: string, review: Omit<BookReview, 'id' | 'date'>) => void;
+  isFollowed?: boolean;
+  onToggleFollow?: () => void;
 }
 
 export const BookDetailModal: React.FC<BookDetailModalProps> = ({
@@ -37,6 +39,8 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
   isDownloaded,
   isBorrowed,
   onAddReview,
+  isFollowed = false,
+  onToggleFollow,
 }) => {
   const [activeTab, setActiveTab] = useState<'sinopsis' | 'ulasan'>('sinopsis');
   const [newComment, setNewComment] = useState('');
@@ -156,6 +160,10 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
 
           {/* Action Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+            <button
+              onClick={onToggleFollow}
+              className="flex-1 px-4 py-3 border rounded-xl font-bold"
+            ><Bookmark className="inline w-4 h-4 mr-1"/>{isFollowed ? 'Berhenti Mengikuti' : 'Ikuti Buku'}</button>
             <button
               onClick={() => {
                 onClose();

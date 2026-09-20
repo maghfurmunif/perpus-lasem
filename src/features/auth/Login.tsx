@@ -27,7 +27,7 @@ export default function Login() {
 
     // Berhasil: arahkan sesuai role (profile di-load ulang oleh onAuthStateChange)
     const slug = (profile?.nama_lengkap || email.split('@')[0]).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
-    navigate(`/app/${slug || 'anggota'}`, { replace: true });
+    navigate("/app", { replace: true });
   }
 
   return (
