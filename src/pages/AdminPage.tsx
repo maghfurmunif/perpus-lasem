@@ -44,8 +44,7 @@ function AdminContent() {
    setLoading(true); setError('');
    try {
      if (path === 'pengaturan-admin') {
-       const {data,error} = await supabase.from('profiles').select('*').in('role',['admin','superadmin','pustakawan','kepala_desa']);
-       if(error) throw error; setAdmins(data ?? []);
+       setAdmins((await db.fetchProfiles()).filter((admin) => ['admin','superadmin','pustakawan','kepala_desa'].includes(admin.role)));
      } else {
        const result = await db.fetchBooks(); setBooks(result.data);
        if (bookId) { const found = result.data.find(b => b.id === bookId); if (!found) throw new Error('Buku tidak ditemukan.'); setBook(found); }
@@ -60,9 +59,7 @@ function AdminContent() {
        }
        if (path === 'moderasi-kreasi') setForumPosts(await db.fetchAllForumPosts());
        if (['admin','sirkulasi','laporan'].includes(path)) {
-         const {data,error} = await supabase.from('borrowings').select('*,books(title,author,cover_image,format)').order('borrow_date',{ascending:false});
-         if(error) throw error;
-         setLoans((data ?? []).map(r => ({id:r.id,bookId:r.book_id,bookTitle:r.books?.title ?? 'Buku dihapus',bookAuthor:r.books?.author ?? '',bookCover:r.books?.cover_image ?? '',format:r.books?.format ?? 'PDF',borrowDate:r.borrow_date,dueDate:r.due_date,status:r.status,canExtend:!r.extended})));
+          setLoans(await db.fetchAllBorrowings());
        }
        if(path === 'usulan-buku') setRequests((await db.fetchBookRequests()).data);
      }

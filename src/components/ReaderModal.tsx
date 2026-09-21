@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   X, 
   ChevronLeft, 
@@ -14,6 +14,7 @@ import {
   Volume2
 } from 'lucide-react';
 import { Book } from '../types';
+import { getCachedBookFile, useOnlineStatus } from '../lib/offline';
 
 interface ReaderModalProps {
   book: Book | null;
@@ -35,11 +36,26 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
   const [fontScale, setFontScale] = useState<number>(18); // px
   const [useSerif, setUseSerif] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const isOnline = useOnlineStatus();
+  const [cachedFileUrl, setCachedFileUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!book?.fileUrl || isOnline) {
+      setCachedFileUrl(null);
+      return () => { active = false };
+    }
+    void getCachedBookFile(book.id).then((url) => { if (active) setCachedFileUrl(url) });
+    return () => { active = false };
+  }, [book, isOnline]);
 
   // Early return SETELAH semua hooks (aturan React Hooks)
   if (!book) return null;
 
-  if (book.fileUrl) return <div className="fixed inset-0 z-50 bg-white flex flex-col"><div className="p-4 flex gap-4"><button onClick={onClose}>Kembali</button><strong>{book.title}</strong><a href={book.fileUrl} target="_blank" rel="noreferrer">Buka file</a></div>{book.format === 'PDF' ? <iframe title={book.title} src={book.fileUrl} className="flex-1 w-full" /> : <p className="p-6">Buka file EPUB menggunakan aplikasi pembaca di perangkat Anda.</p>}</div>;
+  if (book.fileUrl) {
+    const readerUrl = isOnline ? book.fileUrl : cachedFileUrl;
+    return <div className="fixed inset-0 z-50 bg-white flex flex-col"><div className="p-4 flex gap-4"><button className="min-h-11 px-3" onClick={onClose}>Kembali</button><strong className="truncate">{book.title}</strong>{readerUrl && <a className="min-h-11 px-3" href={readerUrl} target="_blank" rel="noreferrer">Buka file</a>}</div>{readerUrl && book.format === 'PDF' ? <iframe title={book.title} src={readerUrl} className="flex-1 w-full" /> : <p className="p-6">{isOnline ? 'Buka file EPUB menggunakan aplikasi pembaca di perangkat Anda.' : 'File ini belum tersimpan untuk dibaca offline.'}</p>}</div>;
+  }
   if (!book.sampleChapters?.length) return <div className="fixed inset-0 z-50 bg-white p-8"><button onClick={onClose}>Kembali</button><p>Konten digital buku ini belum tersedia.</p></div>;
   const chapters = book.sampleChapters;
   const currentChapter = chapters[currentChapterIndex] || chapters[0];

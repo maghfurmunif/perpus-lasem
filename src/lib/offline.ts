@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Book } from '../types'
 
 const STORAGE_KEY = 'perpus-lasem-offline-books-v1'
+const FILE_CACHE_NAME = 'perpus-lasem-files-v1'
 
 interface StoredBook {
   id: string
@@ -18,10 +19,18 @@ function readAll(): StoredBook[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
-    return JSON.parse(raw) as StoredBook[]
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(isStoredBook)
   } catch {
     return []
   }
+}
+
+function isStoredBook(value: unknown): value is StoredBook {
+  if (!value || typeof value !== 'object') return false
+  const book = value as Partial<StoredBook>
+  return typeof book.id === 'string' && typeof book.title === 'string' && typeof book.author === 'string'
 }
 
 function writeAll(items: StoredBook[]) {
@@ -72,6 +81,26 @@ export function getOfflineBook(bookId: string): Book | null {
 
 export function isBookOffline(bookId: string): boolean {
   return readAll().some((b) => b.id === bookId)
+}
+
+export async function cacheBookFile(bookId: string, response: Response): Promise<void> {
+  if (!('caches' in globalThis)) return
+  const cache = await caches.open(FILE_CACHE_NAME)
+  await cache.put(`/offline-books/${encodeURIComponent(bookId)}`, response.clone())
+}
+
+export async function getCachedBookFile(bookId: string): Promise<string | null> {
+  if (!('caches' in globalThis)) return null
+  const cache = await caches.open(FILE_CACHE_NAME)
+  const response = await cache.match(`/offline-books/${encodeURIComponent(bookId)}`)
+  if (!response) return null
+  return URL.createObjectURL(await response.blob())
+}
+
+export async function removeCachedBookFile(bookId: string): Promise<void> {
+  if (!('caches' in globalThis)) return
+  const cache = await caches.open(FILE_CACHE_NAME)
+  await cache.delete(`/offline-books/${encodeURIComponent(bookId)}`)
 }
 
 function emptyBook(id: string): Partial<Book> {

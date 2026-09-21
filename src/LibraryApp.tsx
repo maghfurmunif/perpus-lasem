@@ -22,8 +22,10 @@ import * as db from './lib/db';
 import { hasSupabase } from './lib/supabase';
 import {
   getDownloadedBookIds,
+  cacheBookFile,
   saveDownloadedBook,
   removeDownloadedBook,
+  removeCachedBookFile,
 } from './lib/offline';
 
 const bookSlug = (title: string) => title.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -167,6 +169,7 @@ export default function LibraryApp() {
       if (book.fileUrl) {
         const response = await fetch(book.fileUrl);
         if (!response.ok) throw new Error('File gagal diunduh.');
+        await cacheBookFile(book.id, response);
         const blob = await response.blob();
         const url = URL.createObjectURL(blob); const link = document.createElement('a');
         link.href = url; link.download = book.title + '.' + book.format.toLowerCase(); link.click();
@@ -180,6 +183,7 @@ export default function LibraryApp() {
   // Handle Delete Download
   const handleDeleteDownload = (bookId: string) => {
     removeDownloadedBook(bookId);
+    void removeCachedBookFile(bookId);
     setDownloadItems((prev) => prev.filter((d) => d.bookId !== bookId));
   };
 

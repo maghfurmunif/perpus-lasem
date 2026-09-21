@@ -12,6 +12,9 @@ import type {
   ForumPost,
   Profile,
 } from '../types'
+import { fetchBooks as fetchBooksRepository, fetchBooksPage, fetchPublishedBooks as fetchPublishedBooksRepository } from './repositories/booksRepository'
+import { fetchProfiles as fetchProfilesRepository } from './repositories/profilesRepository'
+import { DbError, toDbError } from './dbErrors'
 
 // ------------------------------------------------------------
 // Mapping DB row <-> UI type
@@ -104,48 +107,15 @@ function bookToRow(book: Partial<Book> & { title: string; author: string }): Par
 // PHASE 2: BUKU
 // ------------------------------------------------------------
 export async function fetchBooks(): Promise<{ data: Book[]; live: boolean }> {
-  if (!hasSupabase) throw new Error('Koneksi Supabase belum dikonfigurasi.')
-
-  const { data, error } = await supabase
-    .from('books')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error || !data) {
-    throw new Error(error?.message ?? 'Gagal memuat data Supabase.')
-  }
-
-  const books = (data as BookRow[]).map(rowToBook)
-  // Ambil agregat ulasan per buku dalam satu query terpisah
-  const { data: revAgg } = await supabase
-    .from('reviews')
-    .select('book_id, rating')
-
-  if (revAgg) {
-    const byBook = new Map<string, { sum: number; count: number }>()
-    for (const r of revAgg as { book_id: string; rating: number }[]) {
-      const cur = byBook.get(r.book_id) ?? { sum: 0, count: 0 }
-      cur.sum += r.rating
-      cur.count += 1
-      byBook.set(r.book_id, cur)
-    }
-    for (const b of books) {
-      const agg = byBook.get(b.id)
-      if (agg && agg.count > 0) {
-        b.rating = Math.round((agg.sum / agg.count) * 10) / 10
-        b.ratingCount = agg.count
-      }
-    }
-  }
-
-  return { data: books, live: true }
+  return fetchBooksRepository()
 }
 
 export async function fetchPublishedBooks(): Promise<{ data: Book[]; live: boolean }> {
-  if (!hasSupabase) throw new Error('Koneksi Supabase belum dikonfigurasi.')
-  const { data, error } = await supabase.from('books').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false })
-  if (error || !data) throw new Error(error?.message ?? 'Gagal memuat buku terbit.')
-  return { data: (data as BookRow[]).map(rowToBook), live: true }
+  return fetchPublishedBooksRepository()
+}
+
+export async function fetchBooksPaginated(page = 0, pageSize = 24, publishedOnly = false) {
+  return fetchBooksPage(page, pageSize, publishedOnly)
 }
 
 export async function getReadingProgress(userId: string, bookId: string) {
@@ -706,12 +676,5 @@ export async function fetchLibraryStats(): Promise<LibraryStats | null> {
 }
 
 export async function fetchProfiles(): Promise<Profile[]> {
-  if (!hasSupabase) return []
-  // Catatan: RLS profiles membatasi; admin bisa lihat semua via policy is_admin()
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error || !data) return []
-  return data as Profile[]
+  return fetchProfilesRepository()
 }
