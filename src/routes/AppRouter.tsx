@@ -11,14 +11,18 @@ import PublicCollectionPage from '../pages/PublicCollectionPage';
 import PublicBookPage from '../pages/PublicBookPage';
 import ContentLandingPage from '../pages/ContentLandingPage';
 import AdminContentPage from '../pages/AdminContentPage';
+import ContentDetailPage from '../pages/ContentDetailPage';
 export default function AppRouter() {
  return <BrowserRouter><Routes>
    <Route path="/" element={<PublicHomePage />} />
    <Route path="/koleksi" element={<PublicCollectionPage />} />
    <Route path="/koleksi/:bookSlug" element={<PublicBookPage />} />
    <Route path="/artikel" element={<ContentLandingPage type="artikel" />} />
+   <Route path="/artikel/:contentSlug" element={<ContentDetailPage type="artikel" />} />
    <Route path="/pengumuman" element={<ContentLandingPage type="pengumuman" />} />
+   <Route path="/pengumuman/:contentSlug" element={<ContentDetailPage type="pengumuman" />} />
    <Route path="/kreasi" element={<ContentLandingPage type="kreasi" />} />
+   <Route path="/kreasi/:contentSlug" element={<ContentDetailPage type="kreasi" />} />
    <Route path="/login" element={<LoginPage />} /><Route path="/register" element={<RegisterPage />} />
    <Route path="/app" element={<AccountBoundary />} />
    <Route path="/app/:username" element={<AccountBoundary />}>

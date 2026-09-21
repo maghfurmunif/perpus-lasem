@@ -593,11 +593,12 @@ export async function fetchForumPosts(): Promise<ForumPost[]> {
 
   const { data, error } = await supabase
     .from('forum_posts')
-    .select('*')
+    .select('id, user_id, author_name, category, title, content, image_url, published, created_at')
+    .eq('published', true)
     .order('created_at', { ascending: false })
 
   if (error || !data) return []
-  return (data as ForumPost[]).filter((post) => post.published !== false)
+  return data as ForumPost[]
 }
 
 export async function fetchAllForumPosts(): Promise<ForumPost[]> {
@@ -636,7 +637,7 @@ export async function fetchForumPostsPage(page = 0, pageSize = 12): Promise<{ da
   if (!hasSupabase) return { data: [], hasMore: false }
   const from = page * pageSize
   const to = from + pageSize
-  const { data, error } = await supabase.from('forum_posts').select('*').eq('published', true).order('created_at', { ascending: false }).range(from, to)
+  const { data, error } = await supabase.from('forum_posts').select('id, user_id, author_name, category, title, content, image_url, published, created_at').eq('published', true).order('created_at', { ascending: false }).range(from, to - 1)
   if (error || !data) return { data: [], hasMore: false }
   return { data: (data as ForumPost[]).slice(0, pageSize), hasMore: data.length > pageSize }
 }
