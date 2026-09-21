@@ -20,6 +20,8 @@ Semua path di bawah diawali /app/:username. Username dinormalisasi dari email ak
 ## Verifikasi yang telah dijalankan
 
 - TypeScript dan build Vite lulus.
+- Validasi otomatis tersedia melalui GitHub Actions pada setiap push ke `main` dan pull request.
+- Pipeline menjalankan `npm ci`, `npm run lint`, `npm test`, dan `npm run build` menggunakan Node.js 22.
 - Migrasi dijalankan pada database Docker terpisah lasem_route_audit_20260920.
 - tests/sql/rls.sql lulus: eskalasi role ditolak, privasi profil, write katalog anggota ditolak, impor anggota ditolak, pinjam/perpanjang/pengembalian admin.
 - Browser tanpa sesi diarahkan dari pengaturan-admin ke login.

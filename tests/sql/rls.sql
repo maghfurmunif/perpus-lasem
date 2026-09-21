@@ -17,6 +17,14 @@ do $$ declare loan uuid; begin
  begin update public.borrowings set due_date=current_date+100 where id=loan; raise exception 'FAIL direct loan edit'; exception when insufficient_privilege then null; end;
 end $$;
 reset role;
+set local role anon;
+select set_config('request.jwt.claim.sub','',true);
+do $$ begin
+ if exists (select 1 from public.announcements where published = false) then
+   raise exception 'FAIL draft announcement visible to anon';
+ end if;
+end $$;
+reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',true);
 select public.return_loan((select id from public.borrowings limit 1));
