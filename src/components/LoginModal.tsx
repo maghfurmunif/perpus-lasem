@@ -43,8 +43,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-stone-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" role="presentation">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-stone-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200" role="dialog" aria-modal="true" aria-labelledby="member-modal-title">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-emerald-800 to-teal-800 text-white p-5 sm:p-6 flex items-center justify-between">
@@ -52,7 +52,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-200 block">
               Registrasi & Kartu Warga
             </span>
-            <h3 className="text-lg font-bold font-serif">
+            <h3 id="member-modal-title" className="text-lg font-bold font-serif">
               Masuk Anggota Perpustakaan
             </h3>
             <p className="text-xs text-emerald-100 mt-0.5">
@@ -61,6 +61,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
 
           <button
+            type="button"
+            aria-label="Tutup dialog profil"
             onClick={onClose}
             className="p-1 rounded-full text-emerald-200 hover:text-white hover:bg-emerald-700/50 transition"
           >

@@ -10,6 +10,7 @@ import { memberRoutes, adminRoutes } from './paths';
 import PublicCollectionPage from '../pages/PublicCollectionPage';
 import PublicBookPage from '../pages/PublicBookPage';
 import ContentLandingPage from '../pages/ContentLandingPage';
+import AdminContentPage from '../pages/AdminContentPage';
 export default function AppRouter() {
  return <BrowserRouter><Routes>
    <Route path="/" element={<PublicHomePage />} />
@@ -23,7 +24,8 @@ export default function AppRouter() {
    <Route path="/app/:username" element={<AccountBoundary />}>
      {memberRoutes.map(path => <Route key={path} path={path} element={<LibraryApp />} />)}
      <Route element={<AdminGuard />}><Route element={<AdminLayout />}>
-       {adminRoutes.filter(([, , superOnly]) => !superOnly).map(([path]) => <Route key={path} path={path} element={<AdminPage />} />)}
+       <Route path="unggah-artikel" element={<AdminContentPage />} />
+       {adminRoutes.filter(([path, , superOnly]) => !superOnly && path !== 'unggah-artikel').map(([path]) => <Route key={path} path={path} element={<AdminPage />} />)}
        <Route element={<AdminGuard superOnly />}>{adminRoutes.filter(([, , superOnly]) => superOnly).map(([path]) => <Route key={path} path={path} element={<AdminPage />} />)}</Route>
      </Route></Route>
    </Route>

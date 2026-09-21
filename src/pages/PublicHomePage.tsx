@@ -21,8 +21,8 @@ export default function PublicHomePage() {
       setAnnouncements(a.data); setPosts(p);
     }).catch(() => undefined);
   }, []);
-  const articles = announcements.filter(a => a.contentType === 'artikel' || a.contentType === 'berita');
-  const notices = announcements.filter(a => a.contentType === 'pengumuman' || a.contentType === 'agenda');
+  const articles = announcements.filter(a => a.contentType === 'artikel');
+  const notices = announcements.filter(a => a.contentType === 'pengumuman');
   return <div className="min-h-screen bg-[#F8F9FA] text-[#1F2937]">
     <header className="bg-[#1E4D3E] text-white sticky top-0 z-30 shadow-md"><div className="max-w-7xl mx-auto px-5 lg:px-8 h-20 flex items-center justify-between gap-6"><Link to="/" className="flex items-center gap-3 shrink-0"><img src="/logo-lasem-mark.png" alt="Perpustakaan Desa Lasem" className="w-14 h-14 rounded-full object-cover bg-white"/><span className="hidden sm:block font-bold leading-tight">PERPUSTAKAAN DESA<br/><span className="text-[#E5A93C]">LASEM</span></span></Link><nav className="hidden lg:flex items-center gap-6 text-sm font-semibold"><a href="#beranda">Beranda</a><a href="#layanan">Layanan</a><a href="#koleksi">Koleksi</a><a href="#kreasi">Kreasi</a><a href="#artikel">Artikel</a><a href="#pengumuman">Pengumuman</a><a href="#tentang">Tentang Kami</a></nav><div className="flex items-center gap-2"><Link to="/register" className="hidden sm:inline-flex border border-white/40 rounded-xl px-4 py-2 text-sm font-semibold hover:bg-white/10">Daftar</Link><Link to="/login" className="bg-[#E5A93C] text-[#1F2937] rounded-xl px-4 py-2 font-bold">Masuk</Link></div></div></header>
     <main>

@@ -84,7 +84,7 @@ export interface Announcement {
   author: string;
   badge: string;
   coverImage?: string;
-  contentType?: string;
+  contentType?: 'artikel' | 'pengumuman';
   published?: boolean;
 }
 
@@ -151,3 +151,5 @@ export interface ForumPost {
   image_url?: string | null;
   published?: boolean;
 }
+
+export type AnnouncementContentType = 'artikel' | 'pengumuman';

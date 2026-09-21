@@ -458,7 +458,7 @@ export async function fetchAnnouncements(publishedOnly?: boolean): Promise<{ dat
       author: a.author,
       badge: a.badge,
       coverImage: a.cover_image ?? undefined,
-      contentType: a.content_type ?? 'berita',
+      contentType: a.content_type === 'pengumuman' ? 'pengumuman' : 'artikel',
       published: a.published ?? true,
     })),
     live: true,
@@ -490,7 +490,7 @@ export async function insertAnnouncement(a: {
     author: data.author,
     badge: data.badge,
     coverImage: data.cover_image ?? undefined,
-    contentType: data.content_type ?? 'berita',
+    contentType: data.content_type === 'pengumuman' ? 'pengumuman' : 'artikel',
     published: data.published ?? false,
   }
 }
@@ -652,6 +652,7 @@ export async function insertForumPost(post: {
   category: string
   title: string
   content: string
+  image_url?: string | null
 }): Promise<ForumPost | null> {
   const { data, error } = await supabase.from('forum_posts').insert(post).select('*').single()
   if (error) {
@@ -659,6 +660,15 @@ export async function insertForumPost(post: {
     return null
   }
   return data as ForumPost
+}
+
+export async function fetchForumPostsPage(page = 0, pageSize = 12): Promise<{ data: ForumPost[]; hasMore: boolean }> {
+  if (!hasSupabase) return { data: [], hasMore: false }
+  const from = page * pageSize
+  const to = from + pageSize
+  const { data, error } = await supabase.from('forum_posts').select('*').eq('published', true).order('created_at', { ascending: false }).range(from, to)
+  if (error || !data) return { data: [], hasMore: false }
+  return { data: (data as ForumPost[]).slice(0, pageSize), hasMore: data.length > pageSize }
 }
 
 export async function likeForumPost(postId: string, likes: number): Promise<boolean> {

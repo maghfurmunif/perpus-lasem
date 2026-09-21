@@ -6,6 +6,7 @@ import {
 import { ForumPost, Announcement } from '../types';
 import * as db from '../lib/db';
 import { hasSupabase } from '../lib/supabase';
+import { uploadCommunityImage } from '../lib/cloudinary';
 
 interface CommunityTabProps {
   userName: string;
@@ -23,11 +24,17 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ userName, userId, an
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const data = await db.fetchForumPosts();
-    setPosts(data);
+    const result = await db.fetchForumPostsPage(0);
+    setPosts(result.data);
+    setHasMore(result.hasMore);
+    setPage(0);
     setLoading(false);
   }, []);
 
@@ -52,6 +59,7 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ userName, userId, an
       category,
       title: title.trim(),
       content: content.trim(),
+      image_url: imageUrl || null,
     });
     setSending(false);
 
@@ -59,9 +67,15 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ userName, userId, an
       setPosts((prev) => [saved, ...prev]);
       setTitle('');
       setContent('');
+      setImageUrl('');
     } else {
       setError('Gagal mengirim postingan. Coba lagi.');
     }
+  };
+
+  const loadMore = async () => {
+    const result = await db.fetchForumPostsPage(page + 1);
+    setPosts((prev) => [...prev, ...result.data]); setPage((value) => value + 1); setHasMore(result.hasMore);
   };
 
   const handleLike = async (post: ForumPost) => {
@@ -152,13 +166,15 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ userName, userId, an
             onChange={(e) => setContent(e.target.value)}
             className="w-full px-3 py-2.5 bg-stone-50 border border-stone-300 rounded-xl outline-none focus:ring-1 focus:ring-emerald-600"
           />
+          <label className="block"><span className="sr-only">Foto kiriman</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const file=e.target.files?.[0];if(!file)return;void (async()=>{setUploading(true);setError(null);try{setImageUrl(await uploadCommunityImage(file));}catch(error){setError(error instanceof Error?error.message:'Foto gagal diunggah.')}finally{setUploading(false)}})()}} /></label>
+          {imageUrl && <img src={imageUrl} alt="Pratinjau kiriman" className="max-h-48 rounded-xl object-cover" />}
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-stone-400">
               Menulis sebagai <strong>{userName}</strong>
             </span>
             <button
               type="submit"
-              disabled={sending}
+              disabled={sending || uploading}
               className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white rounded-xl font-bold flex items-center gap-1.5 transition active:scale-95"
             >
               {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
@@ -167,6 +183,8 @@ export const CommunityTab: React.FC<CommunityTabProps> = ({ userName, userId, an
           </div>
         </form>
       </section>
+
+      {hasMore && <button type="button" onClick={()=>void loadMore()} className="mx-auto block rounded-xl border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-800">Muat kiriman berikutnya</button>}
 
       {/* Daftar Postingan */}
       <section className="space-y-3">

@@ -11,6 +11,10 @@ export async function uploadBookCover(file: File): Promise<string> {
   return uploadCloudinary(file, 'covers')
 }
 
+export async function uploadCommunityImage(file: File): Promise<string> {
+  return uploadCloudinary(file, 'news')
+}
+
 export async function uploadCloudinaryFile(file: File): Promise<{ url: string; publicId: string; bytes: number }> {
   if (!cloudinaryConfigured) throw new Error('Cloudinary belum dikonfigurasi.')
   const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET!); formData.append('folder', 'perpus-lasem/files')

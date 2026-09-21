@@ -137,7 +137,7 @@ function AdminContent() {
    {announcementId && announcement && <form onSubmit={saveAnnouncement} className="space-y-4">
      <label>Judul<input required value={announcement.title} onChange={e=>setAnnouncement({...announcement,title:e.target.value})} /></label>
      <label>Kategori<input required value={announcement.category} onChange={e=>setAnnouncement({...announcement,category:e.target.value})} /></label>
-     <label>Jenis konten<select value={announcement.contentType ?? 'berita'} onChange={e=>setAnnouncement({...announcement,contentType:e.target.value})}><option value="berita">Berita</option><option value="artikel">Artikel</option><option value="agenda">Agenda</option><option value="kreasi_lasem">Kreasi Lasem</option></select></label>
+     <label>Jenis konten<select value={announcement.contentType ?? 'artikel'} onChange={e=>setAnnouncement({...announcement,contentType:e.target.value as 'artikel'|'pengumuman'})}><option value="artikel">Artikel</option><option value="pengumuman">Pengumuman</option></select></label>
      <label>URL foto Cloudinary<input type="url" value={announcement.coverImage ?? ''} onChange={e=>setAnnouncement({...announcement,coverImage:e.target.value})} /></label>
      <label>Isi artikel<textarea required rows={8} value={announcement.summary} onChange={e=>setAnnouncement({...announcement,summary:e.target.value})} /></label>
      <button disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan perubahan'}</button>
