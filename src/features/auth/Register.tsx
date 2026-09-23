@@ -64,7 +64,7 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center p-5 bg-[#F8FAF8]">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-lg border border-stone-200 p-7 space-y-5">
         <div className="text-center space-y-2">
-          <img src="/logo-lasem-mark.png" alt="Perpustakaan Desa Lasem" className="w-16 h-16 mx-auto rounded-full object-cover shadow-md" />
+          <img src="/logo-terang-literasi-transparent.png" alt="Terang Literasi" className="mx-auto h-20 w-64 object-contain shadow-md" />
           <h1 className="text-xl font-bold text-stone-900 font-serif">
             Daftar Anggota Perpustakaan
           </h1>

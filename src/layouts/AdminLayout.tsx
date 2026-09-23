@@ -7,7 +7,7 @@ export default function AdminLayout() {
   const base = `/app/${username}`;
   return <div className="min-h-screen bg-[#F8F9FA] text-[#1F2937] lg:grid lg:grid-cols-[256px_minmax(0,1fr)]">
     <aside className="bg-white border-r p-5 lg:sticky lg:top-0 lg:h-screen overflow-y-auto">
-      <NavLink to={base} className="flex gap-3 items-center font-bold text-[#1E4D3E]"><img src="/logo-lasem-mark.png" alt="" className="w-12 h-12" />Perpustakaan Desa Lasem</NavLink>
+      <NavLink to={base} className="flex gap-3 items-center font-bold text-[#1E4D3E]"><img src="/logo-terang-literasi-transparent.png" alt="Terang Literasi" className="h-12 w-32 object-contain" /></NavLink>
       <p className="my-5 text-sm">{profile?.nama_lengkap} · {role}</p>
       <nav aria-label="Administrasi" className="flex lg:flex-col gap-1 overflow-x-auto">
         {adminRoutes.filter(([path, , superOnly]) => !path.includes(':') && (!superOnly || role === 'superadmin')).map(([path, title]) =>
