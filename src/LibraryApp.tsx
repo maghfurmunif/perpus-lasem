@@ -343,7 +343,7 @@ export default function LibraryApp() {
 
   // Main interactive UI content
   const appContent = (
-    <div className={`min-h-screen flex flex-col ${getFontSizeClass()}`}>
+    <div className={`app-shell min-h-screen flex flex-col bg-[#F8FAF8] text-stone-900 ${getFontSizeClass()}`}>
 
       {/* Data mode banner */}
       {/* Toast Notification */}

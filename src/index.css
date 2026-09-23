@@ -11,6 +11,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .lasem-logo { width: 48px; height: 48px; object-fit: contain; border-radius: 999px; background: white; }
 .lasem-panel { border: 1px solid var(--lasem-line); border-radius: var(--lasem-radius); background: white; }
 
+html.dark .app-shell { background: #0f172a; color: #e2e8f0; }
+html.dark .app-shell .bg-white { background-color: #1e293b; }
+html.dark .app-shell .bg-stone-50, html.dark .app-shell .bg-stone-100, html.dark .app-shell .bg-slate-100 { background-color: #273449; }
+html.dark .app-shell .border-stone-200, html.dark .app-shell .border-stone-300, html.dark .app-shell .border-slate-100 { border-color: #475569; }
+html.dark .app-shell .text-stone-500, html.dark .app-shell .text-slate-500, html.dark .app-shell .text-slate-400 { color: #94a3b8; }
+html.dark .app-shell .text-stone-600, html.dark .app-shell .text-stone-700, html.dark .app-shell .text-slate-700 { color: #cbd5e1; }
+html.dark .app-shell input, html.dark .app-shell select, html.dark .app-shell textarea { background: #0f172a; color: #e2e8f0; border-color: #475569; }
+html.dark .app-shell input::placeholder, html.dark .app-shell textarea::placeholder { color: #94a3b8; }
+
 
 .admin-page form { padding: 24px; background: white; border: 1px solid #E5E7EB; border-radius: 16px; display: grid; gap: 16px; }
 .admin-page label { display: grid; gap: 6px; font-size: 14px; }
